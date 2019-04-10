@@ -9,3 +9,6 @@ Este proyecto es una continuación de la prática anterior. Se desea añadir al 
 
 ### Versión 1.0
  - Práctica completada a falta del control de ultrasonidos.
+
+### Versión 1.5
+ - Práctica completada.

@@ -45,6 +45,8 @@
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim11;
 int pulsado = 0;
+int volatile times = 0;
+int cercanos = 0;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -100,11 +102,13 @@ int main(void)
   MX_TIM11_Init();
   MX_TIM2_Init();
   HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_Base_Start(&htim11);
   // Start PWM at Port-B pin#6
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-
   /* USER CODE BEGIN 2 */
 
+  HAL_TIM_Base_Start_IT(&htim11);
+  HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,7 +116,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    htim2.Instance->CCR1 = 65;
+     htim2.Instance->CCR1 = 75;
     HAL_Delay(1000);
     GPIOB->ODR |= GPIO_ODR_OD6_Msk; //Encender Verde Coches
     GPIOA->ODR |= GPIO_ODR_OD7_Msk; //Encender Rojo Peatones
@@ -121,13 +125,17 @@ int main(void)
       modo = 1;
       control = 1;
       counter_parpadeo = 0;
+      ultrasonidos();
       while (control == 1)
       {
         switch (modo)
         {
         case 1:
           counter_parpadeo = 0;
-          HAL_Delay(3000);
+          if (cercanos == 1)
+          {
+            HAL_Delay(3000);
+          }
           GPIOB->ODR &= ~GPIO_ODR_OD6_Msk; //Apagar verde coches
           GPIOC->ODR |= GPIO_ODR_OD7_Msk;  //Encender amarillo coches
           HAL_Delay(3000);
@@ -139,7 +147,7 @@ int main(void)
           htim2.Instance->CCR1 = 25;
           GPIOA->ODR &= ~GPIO_ODR_OD7_Msk; //Apagamos rojo peatones
           GPIOA->ODR |= GPIO_ODR_OD6_Msk;  //Encender verde peatones
-          HAL_Delay(3000);
+          HAL_Delay(15000);
           modo = 3;
           break;
         case 3:
@@ -161,11 +169,14 @@ int main(void)
           modo = 1;
           control = 0;
           pulsado = 0;
+          cercanos = 0;
+          times = 0;
           break;
         }
       }
       /* USER CODE BEGIN 3 */
     }
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -235,7 +246,7 @@ static void MX_TIM2_Init(void)
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  //htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  //htim2.Init.AutoReloadPreload = 8399TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -366,11 +377,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(AmarilloC_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Ultrasonido_Pin */
-  GPIO_InitStruct.Pin = Ultrasonido_Pin;
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Ultrasonido_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Boton_Pin */
   GPIO_InitStruct.Pin = Boton_Pin;
@@ -391,11 +402,94 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	__disable_irq();
-	if(GPIO_Pin == GPIO_PIN_10)
-	pulsado = 1;
-	__enable_irq();
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  __disable_irq();
+  if (GPIO_Pin == GPIO_PIN_10)
+    pulsado = 1;
+  __enable_irq();
+}
+
+void cambiarModoPin(int modo)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if (modo == 0) //Output
+  {
+    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  }
+  else if (modo == 1) //Input
+  {
+    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  }
+}
+
+int __io_putchar(int ch)
+{
+  uint8_t c[1];
+  c[0] = ch & 0x00FF;
+  HAL_UART_Transmit(&huart2, &*c, 1, 100);
+  return ch;
+}
+
+int _write(int file, char *ptr, int len)
+{
+  int DataIdx;
+  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  {
+    __io_putchar(*ptr++);
+  }
+  return len;
+}
+
+int calcularDistanciaCm(int veces)
+{
+  int distancia = 0;
+  distancia = (veces * 10) / 58;
+  printf("D: %d cm.\n", distancia);
+  return distancia;
+}
+
+void ultrasonidos()
+{
+  int times2 = 0;
+  int times3 = 0;
+  cambiarModoPin(0); //Modo output
+  times = 0;
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+
+  while (times >= 1)
+  {
+  }
+
+  cambiarModoPin(1); //Modo Input
+
+  while (!(GPIOA->IDR & GPIO_IDR_ID8_Msk))
+  {
+  }
+  times2 = times;
+  while ((GPIOA->IDR & GPIO_IDR_ID8_Msk))
+  {
+  }
+  times3 = times;
+
+  if (calcularDistanciaCm(times3 - times2) < 40)
+  {
+    cercanos = 1;
+  }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM11)
+  {
+    times++;
+  }
 }
 /* USER CODE END 4 */
 

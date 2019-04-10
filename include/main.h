@@ -77,8 +77,6 @@ void Error_Handler(void);
 #define RojoP_GPIO_Port GPIOA
 #define AmarilloC_Pin GPIO_PIN_7
 #define AmarilloC_GPIO_Port GPIOC
-#define Ultrasonido_Pin GPIO_PIN_8
-#define Ultrasonido_GPIO_Port GPIOA
 #define RojoC_Pin GPIO_PIN_9
 #define RojoC_GPIO_Port GPIOA
 #define Boton_Pin GPIO_PIN_10
