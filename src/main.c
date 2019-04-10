@@ -116,7 +116,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-     htim2.Instance->CCR1 = 75;
+    htim2.Instance->CCR1 = 75;
     HAL_Delay(1000);
     GPIOB->ODR |= GPIO_ODR_OD6_Msk; //Encender Verde Coches
     GPIOA->ODR |= GPIO_ODR_OD7_Msk; //Encender Rojo Peatones

@@ -12,3 +12,6 @@ Este proyecto es una continuación de la prática anterior. Se desea añadir al 
 
 ### Versión 1.5
  - Práctica completada.
+
+### Versión 2.0
+ - Práctica finalizada con documentación.
