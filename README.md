@@ -6,3 +6,6 @@ Este proyecto es una continuación de la prática anterior. Se desea añadir al 
 ### Versión 0.5
  - Esqueleto del código creado con STM32CUBEMX.
  - Pruebas del motor implementadas.
+
+### Versión 1.0
+ - Práctica completada a falta del control de ultrasonidos.
